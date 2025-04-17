@@ -16,9 +16,16 @@ The libraries used are:
 
 To run the examples, clone this repo and run the following commands:
 
+Fetch the data from the API and save it to a local sqlite database.
+
 ```bash
-./fetch_data.sh  # fetch data used for backend
-./server.py  # start the server on localhost (both serving the static HTML file and the API)
+./fetch_data.sh
+```
+
+Start the server on localhost (both serving the static HTML file and the API)
+
+```bash
+./server.py
 ```
 
 ## References:
@@ -64,11 +71,3 @@ To run the examples, clone this repo and run the following commands:
 ### Reference blog post
 
 - [byby.dev](https://byby.dev/js-reactive-libraries) JavaScript Reactive Programming Libraries
-
-```
-
-```
-
-```
-
-```
