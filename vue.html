@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Vue Reactivity</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module">
+      import { createApp, ref, watch, onMounted } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+      createApp({
+        setup() {
+          // reactive state
+          const username = ref("alice");
+          const quantity = ref(3);
+          const comments = ref("Hello!");
+          const tags = ref(["foo", "bar", "baz"]);
+
+          const greeting = ref("");
+          const processedQuantity = ref(null);
+          const echoedComments = ref("");
+          const normalizedTags = ref([]);
+
+          // proxy for tags <-> comma‐string
+          const tagsInput = ref(tags.value.join(","));
+          // prettier-ignore
+          watch(tagsInput, val => (tags.value = val.split(",").map(t => t.trim()).filter(Boolean)));
+
+          // hydrate from localStorage on mount
+          onMounted(() => {
+            try {
+              const raw = localStorage.getItem("appState");
+              if (!raw) return;
+              const s = JSON.parse(raw);
+              if (s.username != null) username.value = s.username;
+              if (s.quantity != null) quantity.value = s.quantity;
+              if (s.comments != null) comments.value = s.comments;
+              if (s.tags != null) {
+                tags.value = s.tags;
+                tagsInput.value = s.tags.join(",");
+              }
+            } catch (_) {}
+          });
+
+          // persist whenever inputs change
+          watch([username, quantity, comments, tags], () => {
+            localStorage.setItem(
+              "appState",
+              JSON.stringify({
+                username: username.value,
+                quantity: quantity.value,
+                comments: comments.value,
+                tags: tags.value
+              })
+            );
+          });
+
+          // server sync on any change (and immediately)
+          watch(
+            [username, quantity, comments, tags],
+            () => {
+              fetch("/api/my-endpoint", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  username: username.value,
+                  quantity: quantity.value,
+                  comments: comments.value,
+                  tags: tags.value
+                })
+              })
+                .then(response => response.json())
+                .then(data => {
+                  greeting.value = data.greeting;
+                  processedQuantity.value = data.processedQuantity;
+                  echoedComments.value = data.echoedComments;
+                  normalizedTags.value = data.normalizedTags;
+                })
+                .catch(err => {
+                  console.error(err);
+                  greeting.value = "⚠️ Error";
+                  processedQuantity.value = null;
+                  echoedComments.value = "";
+                  normalizedTags.value = [];
+                });
+            },
+            { immediate: true }
+          );
+
+          return {
+            username,
+            quantity,
+            comments,
+            tagsInput,
+            greeting,
+            processedQuantity,
+            echoedComments,
+            normalizedTags
+          };
+        }
+      }).mount("#app");
+    </script>
+  </head>
+  <body id="app">
+    <h1>Vue ESModule Reactivity With Auto‐Refresh</h1>
+
+    <section>
+      <label for="username">Username:</label>
+      <input id="username" type="text" v-model="username" />
+      <div class="output">{{ greeting || '—' }}</div>
+    </section>
+
+    <section>
+      <label for="quantity">Quantity:</label>
+      <input id="quantity" type="number" v-model.number="quantity" />
+      <div class="output">{{ processedQuantity != null ? `You asked for ${processedQuantity} items.` : '—' }}</div>
+    </section>
+
+    <section>
+      <label for="comments">Comments:</label>
+      <textarea id="comments" rows="3" v-model="comments"></textarea>
+      <div class="output">{{ echoedComments ? `Server says: “${echoedComments}”` : '—' }}</div>
+    </section>
+
+    <section>
+      <label for="tags">Tags (comma‑separated):</label>
+      <input id="tags" type="text" v-model="tagsInput" />
+      <div class="output">
+        <ul>
+          <li v-for="(tag, i) in normalizedTags" :key="i">{{ tag }}</li>
+        </ul>
+      </div>
+    </section>
+  </body>
+</html>

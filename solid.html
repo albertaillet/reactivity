@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Solid Signals With Auto‐Refresh</title>
+    <title>Solid Signals</title>
     <link rel="stylesheet" href="style.css" />
     <script type="module">
       import { createRoot, createSignal, createEffect } from "https://cdn.jsdelivr.net/npm/solid-js/dist/solid.min.js";
@@ -86,7 +86,7 @@
               tags: tags()
             })
           })
-            .then(respone => respone.json())
+            .then(response => response.json())
             .then(data => {
               setGreeting(data.greeting);
               setProcessed(data.processedQuantity);
