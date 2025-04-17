@@ -5,7 +5,11 @@
     <title>Solid Signals</title>
     <link rel="stylesheet" href="style.css" />
     <script type="module">
-      import { createRoot, createSignal, createEffect } from "https://cdn.jsdelivr.net/npm/solid-js/dist/solid.min.js";
+      import {
+        createRoot,
+        createSignal,
+        createEffect
+      } from "https://esm.sh/solid-js?exports=createRoot,createSignal,createEffect";
 
       createRoot(() => {
         // create individual signals
@@ -52,7 +56,7 @@
         createEffect(() => (out1.innerText = `Hello ${username()}!`));
         // prettier-ignore
         createEffect(() => (out2.innerHTML = "<table><thead><tr><th>id</th><th>title</th></tr></thead><tbody>"
-          + tableData().map(row => `<tr><td>${row.id}</td><td>${row.title}</td></tr>`).join("") + "</tbody></table>"));
+              + tableData().map(row => `<tr><td>${row.id}</td><td>${row.title}</td></tr>`).join("") + "</tbody></table>"));
 
         // effect to fetch data from the server and update out signals
         createEffect(() => {
