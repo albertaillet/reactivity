@@ -1,0 +1,6 @@
+body { font-family: system-ui; padding: 1rem; }
+section { margin-bottom: 1.5rem; }
+label { display: block; margin-bottom: .25rem; }
+input, textarea { width: 100%; padding: .5rem; }
+button { padding: .5rem 1rem; }
+.output { border: 1px solid #ddd; padding: .5rem; background: #f9f9f9; }

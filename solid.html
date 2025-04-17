@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Solid Signals With Auto‐Refresh</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module">
+      import { createRoot, createSignal, createEffect } from "https://cdn.jsdelivr.net/npm/solid-js/dist/solid.min.js";
+
+      createRoot(() => {
+        // 1) create individual signals
+        const [username, setUsername] = createSignal("alice");
+        const [quantity, setQuantity] = createSignal(3);
+        const [comments, setComments] = createSignal("Hello!");
+        const [tags, setTags] = createSignal(["foo", "bar", "baz"]);
+
+        const [greeting, setGreeting] = createSignal("");
+        const [processedQuantity, setProcessed] = createSignal(null);
+        const [echoedComments, setEchoed] = createSignal("");
+        const [normalizedTags, setNormTags] = createSignal([]);
+
+        // 2) hydrate from localStorage on load
+        (() => {
+          try {
+            const raw = localStorage.getItem("appState");
+            if (!raw) return;
+            const s = JSON.parse(raw);
+            if (s.username != null) setUsername(s.username);
+            if (s.quantity != null) setQuantity(s.quantity);
+            if (s.comments != null) setComments(s.comments);
+            if (s.tags != null) setTags(s.tags);
+          } catch (_) {}
+        })();
+
+        // 3) persist whenever any input‐signal changes
+        createEffect(() => {
+          localStorage.setItem(
+            "appState",
+            JSON.stringify({
+              username: username(),
+              quantity: quantity(),
+              comments: comments(),
+              tags: tags()
+            })
+          );
+        });
+
+        // 4) grab your DOM nodes once
+        const inUsername = document.getElementById("username");
+        const inQuantity = document.getElementById("quantity");
+        const inComments = document.getElementById("comments");
+        const inTags = document.getElementById("tags");
+
+        const out1 = document.getElementById("out1");
+        const out2 = document.getElementById("out2");
+        const out3 = document.getElementById("out3");
+        const out4 = document.getElementById("out4");
+
+        // 5) wire inputs → signals
+        inUsername.addEventListener("input", e => setUsername(e.currentTarget.value));
+        inQuantity.addEventListener("input", e => setQuantity(+e.currentTarget.value));
+        inComments.addEventListener("input", e => setComments(e.currentTarget.value));
+        // prettier-ignore
+        inTags.addEventListener("input", e => setTags(e.currentTarget.value.split(",").map(t => t.trim()).filter(Boolean)));
+
+        // 6) effects to keep DOM in sync with signals
+        createEffect(() => (inUsername.value = username()));
+        createEffect(() => (inQuantity.value = quantity()));
+        createEffect(() => (inComments.value = comments()));
+        createEffect(() => (inTags.value = tags().join(",")));
+        createEffect(() => (out1.innerText = greeting() || "—"));
+        createEffect(() => (out2.innerText = processedQuantity() != null ? `You asked for ${processedQuantity()} items.` : "—"));
+        createEffect(() => (out3.innerText = echoedComments() ? `Server says: “${echoedComments()}”` : "—"));
+        // prettier-ignore
+        createEffect(() => (out4.innerHTML = ("<ul>" + normalizedTags().map(t => `<li>${t}</li>`).join("") + "</ul>")));
+
+        // 7) whenever *any* of these four signals change, call the server
+        createEffect(() => {
+          fetch("/api/my-endpoint", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              username: username(),
+              quantity: quantity(),
+              comments: comments(),
+              tags: tags()
+            })
+          })
+            .then(respone => respone.json())
+            .then(data => {
+              setGreeting(data.greeting);
+              setProcessed(data.processedQuantity);
+              setEchoed(data.echoedComments);
+              setNormTags(data.normalizedTags);
+            })
+            .catch(err => {
+              console.error(e);
+              setGreeting("⚠️ Error");
+              setProcessed(null);
+              setEchoed("");
+              setNormTags([]);
+            });
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <h1>Solid Signals With Auto‐Refresh</h1>
+
+    <section>
+      <label for="username">Username:</label>
+      <input id="username" type="text" />
+      <div class="output" id="out1">—</div>
+    </section>
+
+    <section>
+      <label for="quantity">Quantity:</label>
+      <input id="quantity" type="number" />
+      <div class="output" id="out2">—</div>
+    </section>
+
+    <section>
+      <label for="comments">Comments:</label>
+      <textarea id="comments" rows="3"></textarea>
+      <div class="output" id="out3">—</div>
+    </section>
+
+    <section>
+      <label for="tags">Tags (comma‑separated):</label>
+      <input id="tags" type="text" />
+      <div class="output" id="out4">—</div>
+    </section>
+  </body>
+</html>
