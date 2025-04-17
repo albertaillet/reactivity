@@ -28,7 +28,10 @@
       })();
 
       // persist whenever any input‐state changes
-      effect(() => localStorage.setItem("appState", JSON.stringify(state)));
+      effect(() => {
+        const persistantState = { username: state.username, maxRows: state.maxRows, search: state.search };
+        localStorage.setItem("appState", JSON.stringify(persistantState));
+      });
 
       // get DOM nodes once
       const inUsername = document.getElementById("username");

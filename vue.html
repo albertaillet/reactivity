@@ -32,8 +32,8 @@
 
           // persist whenever inputs change
           watch([username, maxRows, search], () => {
-            const stringified = JSON.stringify({ username: username.value, maxRows: maxRows.value, search: search.value });
-            localStorage.setItem("appState", stringified);
+            const persistantState = { username: username.value, maxRows: maxRows.value, search: search.value };
+            localStorage.setItem("appState", JSON.stringify(persistantState));
           });
 
           // fetch tableData on maxRows or search change, debounced
