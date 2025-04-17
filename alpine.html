@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Alpine ESM Reactivity Demo</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module">
+      import Alpine from "https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/module.esm.js";
+
+      // register your component
+      Alpine.data("app", () => ({
+        username: "alice",
+        maxRows: 3,
+        search: "t",
+        tableData: [],
+
+        greeting() {
+          return `Hello ${this.username}!`;
+        },
+
+        init() {
+          // hydrate from localStorage
+          try {
+            const raw = localStorage.getItem("appState");
+            if (raw) {
+              const s = JSON.parse(raw);
+              if (s.username != null) this.username = s.username;
+              if (s.maxRows != null) this.maxRows = s.maxRows;
+              if (s.search != null) this.search = s.search;
+            }
+          } catch {}
+
+          // persist inputs
+          ["username", "maxRows", "search"].forEach(p => {
+            this.$watch(p, () => {
+              const persistentState = { username: this.username, maxRows: this.maxRows, search: this.search };
+              localStorage.setItem("appState", JSON.stringify(persistentState));
+            });
+          });
+
+          // fetch tableData on maxRows or search change, debounced
+          let timer;
+          const fetchData = () => {
+            fetch("/api/my-endpoint", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ maxRows: this.maxRows, search: this.search })
+            })
+              .then(res => res.json())
+              .then(data => (this.tableData = data))
+              .catch(() => (this.tableData = []));
+          };
+          // initial load
+          fetchData();
+          ["maxRows", "search"].forEach(p => {
+            this.$watch(p, () => {
+              clearTimeout(timer);
+              timer = setTimeout(fetchData, 50);
+            });
+          });
+        }
+      }));
+
+      window.Alpine = Alpine;
+      Alpine.start();
+    </script>
+  </head>
+  <body x-data="app">
+    <h1>Alpine ESM Reactivity Demo</h1>
+
+    <section>
+      <label for="username">Username:</label>
+      <input id="username" type="text" x-model="username" />
+      <div class="output" x-text="greeting()"></div>
+    </section>
+
+    <section>
+      <label for="maxRows">MaxRows:</label>
+      <input id="maxRows" type="number" x-model.number="maxRows" />
+      <label for="search">Search:</label>
+      <textarea id="search" rows="3" x-model="search"></textarea>
+      <div class="output">
+        <table x-show="tableData.length">
+          <thead>
+            <tr>
+              <th>id</th>
+              <th>title</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="row in tableData" :key="row.id">
+              <tr>
+                <td x-text="row.id"></td>
+                <td x-text="row.title"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+        <div x-show="!tableData.length">—</div>
+      </div>
+    </section>
+  </body>
+</html>
