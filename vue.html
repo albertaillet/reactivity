@@ -2,28 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Vue Reactivity</title>
+    <title>Vue Reactivity Demo</title>
     <link rel="stylesheet" href="style.css" />
     <script type="module">
-      import { createApp, ref, watch, onMounted } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+      import { createApp, ref, computed, watch, onMounted } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
 
       createApp({
         setup() {
           // reactive state
           const username = ref("alice");
-          const quantity = ref(3);
-          const comments = ref("Hello!");
-          const tags = ref(["foo", "bar", "baz"]);
+          const maxRows = ref(3);
+          const search = ref("t");
+          const tableData = ref([]);
 
-          const greeting = ref("");
-          const processedQuantity = ref(null);
-          const echoedComments = ref("");
-          const normalizedTags = ref([]);
-
-          // proxy for tags <-> comma‐string
-          const tagsInput = ref(tags.value.join(","));
-          // prettier-ignore
-          watch(tagsInput, val => (tags.value = val.split(",").map(t => t.trim()).filter(Boolean)));
+          // computed greeting
+          const greeting = computed(() => `Hello ${username.value}!`);
 
           // hydrate from localStorage on mount
           onMounted(() => {
@@ -32,103 +25,85 @@
               if (!raw) return;
               const s = JSON.parse(raw);
               if (s.username != null) username.value = s.username;
-              if (s.quantity != null) quantity.value = s.quantity;
-              if (s.comments != null) comments.value = s.comments;
-              if (s.tags != null) {
-                tags.value = s.tags;
-                tagsInput.value = s.tags.join(",");
-              }
+              if (s.maxRows != null) maxRows.value = s.maxRows;
+              if (s.search != null) search.value = s.search;
             } catch (_) {}
           });
 
           // persist whenever inputs change
-          watch([username, quantity, comments, tags], () => {
-            localStorage.setItem(
-              "appState",
-              JSON.stringify({
-                username: username.value,
-                quantity: quantity.value,
-                comments: comments.value,
-                tags: tags.value
-              })
-            );
+          watch([username, maxRows, search], () => {
+            const stringified = JSON.stringify({ username: username.value, maxRows: maxRows.value, search: search.value });
+            localStorage.setItem("appState", stringified);
           });
 
-          // server sync on any change (and immediately)
+          // fetch tableData on maxRows or search change, debounced
+          let timer;
           watch(
-            [username, quantity, comments, tags],
+            [maxRows, search],
             () => {
-              fetch("/api/my-endpoint", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  username: username.value,
-                  quantity: quantity.value,
-                  comments: comments.value,
-                  tags: tags.value
-                })
-              })
-                .then(response => response.json())
-                .then(data => {
-                  greeting.value = data.greeting;
-                  processedQuantity.value = data.processedQuantity;
-                  echoedComments.value = data.echoedComments;
-                  normalizedTags.value = data.normalizedTags;
-                })
-                .catch(err => {
-                  console.error(err);
-                  greeting.value = "⚠️ Error";
-                  processedQuantity.value = null;
-                  echoedComments.value = "";
-                  normalizedTags.value = [];
+              clearTimeout(timer);
+              timer = setTimeout(() => {
+                const body = JSON.stringify({
+                  maxRows: maxRows.value,
+                  search: search.value
                 });
+                fetch("/api/my-endpoint", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body
+                })
+                  .then(res => res.json())
+                  .then(data => (tableData.value = data))
+                  .catch(() => (tableData.value = []));
+              }, 50); // debounce
             },
             { immediate: true }
           );
 
           return {
             username,
-            quantity,
-            comments,
-            tagsInput,
-            greeting,
-            processedQuantity,
-            echoedComments,
-            normalizedTags
+            maxRows,
+            search,
+            tableData,
+            greeting
           };
         }
       }).mount("#app");
     </script>
   </head>
-  <body id="app">
-    <h1>Vue ESModule Reactivity With Auto‐Refresh</h1>
+  <body>
+    <div id="app">
+      <h1>Vue Reactivity Demo</h1>
 
-    <section>
-      <label for="username">Username:</label>
-      <input id="username" type="text" v-model="username" />
-      <div class="output">{{ greeting || '—' }}</div>
-    </section>
+      <section>
+        <label for="username">Username:</label>
+        <input id="username" type="text" v-model="username" />
+        <div class="output">{{ greeting }}</div>
+      </section>
 
-    <section>
-      <label for="quantity">Quantity:</label>
-      <input id="quantity" type="number" v-model.number="quantity" />
-      <div class="output">{{ processedQuantity != null ? `You asked for ${processedQuantity} items.` : '—' }}</div>
-    </section>
-
-    <section>
-      <label for="comments">Comments:</label>
-      <textarea id="comments" rows="3" v-model="comments"></textarea>
-      <div class="output">{{ echoedComments ? `Server says: “${echoedComments}”` : '—' }}</div>
-    </section>
-
-    <section>
-      <label for="tags">Tags (comma‑separated):</label>
-      <input id="tags" type="text" v-model="tagsInput" />
-      <div class="output">
-        <ul>
-          <li v-for="(tag, i) in normalizedTags" :key="i">{{ tag }}</li>
-        </ul>
-      </div>
-    </section>
+      <section>
+        <label for="maxRows">MaxRows:</label>
+        <input id="maxRows" type="number" v-model.number="maxRows" />
+        <label for="search">Search:</label>
+        <textarea id="search" rows="3" v-model="search"></textarea>
+        <div class="output">
+          <table v-if="tableData.length">
+            <thead>
+              <tr>
+                <th>id</th>
+                <th>title</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in tableData" :key="row.id">
+                <td>{{ row.id }}</td>
+                <td>{{ row.title }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-else>—</div>
+        </div>
+      </section>
+    </div>
   </body>
 </html>
