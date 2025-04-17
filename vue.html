@@ -7,17 +7,43 @@
     <script type="module">
       import { createApp, ref, computed, watch, onMounted } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
 
+      // reactive state (it is also possible to use reactive({}) to have a reactive object, .value is not needed)
+      const username = ref("alice");
+      const maxRows = ref(3);
+      const search = ref("t");
+      const tableData = ref([]);
+
+      // computed greeting
+      const greeting = computed(() => `Hello ${username.value}!`);
+
+      // persist whenever inputs change
+      watch([username, maxRows, search], () => {
+        const persistentState = { username: username.value, maxRows: maxRows.value, search: search.value };
+        localStorage.setItem("appState", JSON.stringify(persistentState));
+      });
+
+      // fetch tableData on maxRows or search change, debounced
+      let timer;
+      watch(
+        [maxRows, search],
+        () => {
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            fetch("/api/my-endpoint", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ maxRows: maxRows.value, search: search.value })
+            })
+              .then(res => res.json())
+              .then(data => (tableData.value = data))
+              .catch(() => (tableData.value = []));
+          }, 50); // debounce
+        },
+        { immediate: true }
+      );
+
       createApp({
         setup() {
-          // reactive state
-          const username = ref("alice");
-          const maxRows = ref(3);
-          const search = ref("t");
-          const tableData = ref([]);
-
-          // computed greeting
-          const greeting = computed(() => `Hello ${username.value}!`);
-
           // hydrate from localStorage on mount
           onMounted(() => {
             try {
@@ -29,81 +55,42 @@
               if (s.search != null) search.value = s.search;
             } catch (_) {}
           });
-
-          // persist whenever inputs change
-          watch([username, maxRows, search], () => {
-            const persistantState = { username: username.value, maxRows: maxRows.value, search: search.value };
-            localStorage.setItem("appState", JSON.stringify(persistantState));
-          });
-
-          // fetch tableData on maxRows or search change, debounced
-          let timer;
-          watch(
-            [maxRows, search],
-            () => {
-              clearTimeout(timer);
-              timer = setTimeout(() => {
-                const body = JSON.stringify({
-                  maxRows: maxRows.value,
-                  search: search.value
-                });
-                fetch("/api/my-endpoint", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body
-                })
-                  .then(res => res.json())
-                  .then(data => (tableData.value = data))
-                  .catch(() => (tableData.value = []));
-              }, 50); // debounce
-            },
-            { immediate: true }
-          );
-
-          return {
-            username,
-            maxRows,
-            search,
-            tableData,
-            greeting
-          };
+          return { username, maxRows, search, tableData, greeting };
         }
       }).mount("#app");
     </script>
   </head>
-  <body>
-    <div id="app">
-      <h1>Vue Reactivity Demo</h1>
+  <body id="app">
+    <h1>Vue Reactivity Demo</h1>
 
-      <section>
-        <label for="username">Username:</label>
-        <input id="username" type="text" v-model="username" />
-        <div class="output">{{ greeting }}</div>
-      </section>
+    <section>
+      <label for="username">Username:</label>
+      <input id="username" type="text" v-model="username" />
+      <div class="output">{{ greeting }}</div>
+    </section>
 
-      <section>
-        <label for="maxRows">MaxRows:</label>
-        <input id="maxRows" type="number" v-model.number="maxRows" />
-        <label for="search">Search:</label>
-        <textarea id="search" rows="3" v-model="search"></textarea>
-        <div class="output">
-          <table v-if="tableData.length">
-            <thead>
-              <tr>
-                <th>id</th>
-                <th>title</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in tableData" :key="row.id">
-                <td>{{ row.id }}</td>
-                <td>{{ row.title }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <div v-else>—</div>
-        </div>
-      </section>
-    </div>
+    <section>
+      <label for="maxRows">MaxRows:</label>
+      <input id="maxRows" type="number" v-model.number="maxRows" />
+      <label for="search">Search:</label>
+      <textarea id="search" rows="3" v-model="search"></textarea>
+      <div class="output">
+        <table v-if="tableData.length">
+          <thead>
+            <tr>
+              <th>id</th>
+              <th>title</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in tableData" :key="row.id">
+              <td>{{ row.id }}</td>
+              <td>{{ row.title }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-else>—</div>
+      </div>
+    </section>
   </body>
 </html>

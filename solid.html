@@ -59,7 +59,7 @@
           const body = JSON.stringify({ maxRows: maxRows(), search: search() });
           const timer = setTimeout(() => {
             fetch("/api/my-endpoint", { method: "POST", headers: { "Content-Type": "application/json" }, body: body })
-              .then(response => response.json())
+              .then(res => res.json())
               .then(data => setTableData(data))
               .catch(() => setTableData([]));
           }, 50); // debounce

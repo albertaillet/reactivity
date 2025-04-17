@@ -29,8 +29,8 @@
 
       // persist whenever any input‐state changes
       effect(() => {
-        const persistantState = { username: state.username, maxRows: state.maxRows, search: state.search };
-        localStorage.setItem("appState", JSON.stringify(persistantState));
+        const persistentState = { username: state.username, maxRows: state.maxRows, search: state.search };
+        localStorage.setItem("appState", JSON.stringify(persistentState));
       });
 
       // get DOM nodes once
@@ -60,7 +60,7 @@
         const body = JSON.stringify({ maxRows: state.maxRows, search: state.search });
         const timer = setTimeout(() => {
           fetch("/api/my-endpoint", { method: "POST", headers: { "Content-Type": "application/json" }, body })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => (state.tableData = data))
             .catch(() => (state.tableData = []));
         }, 50); // debounce
