@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tiny Reactivity Demo</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module">
+      import { reactive, effect, computed } from "./reactive.js";
+
+      // 1) State object
+      const state = reactive({ username: "alice", count: 3, comments: "Hello!", tags: ["foo", "bar", "baz"] });
+
+      // 3) DOM nodes once
+      const inUsername = document.getElementById("username");
+      const inQuantity = document.getElementById("quantity");
+      const inComments = document.getElementById("comments");
+      const inTags = document.getElementById("tags");
+
+      const out1 = document.getElementById("out1");
+      const out2 = document.getElementById("out2");
+      const out3 = document.getElementById("out3");
+      const out4 = document.getElementById("out4");
+
+      // 4) wire inputs → state
+      inUsername.addEventListener("input", e => (state.username = e.target.value));
+      inQuantity.addEventListener("input", e => (state.count = parseInt(e.target.value, 10) || 0));
+      inComments.addEventListener("input", e => (state.comments = e.target.value));
+      // prettier-ignore
+      inTags.addEventListener("input", e => (state.tags = e.target.value.split(",").map(t => t.trim()).filter(Boolean)));
+
+      // 5) Effects to update the view
+      effect(() => (inUsername.value = state.username));
+      effect(() => (inQuantity.value = state.count));
+      effect(() => (inComments.value = state.comments));
+      effect(() => {
+        fetch("/api/my-endpoint", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: state.username,
+            quantity: state.count,
+            comments: state.comments,
+            tags: state.tags
+          })
+        })
+          .then(response => response.json())
+          .then(data => {
+            out1.textContent = data.greeting;
+            out2.textContent = data.processedQuantity;
+            out3.textContent = data.echoedComments;
+            out4.textContent = data.normalizedTags;
+          })
+          .catch(err => {
+            console.error(e);
+            out1.textContent = "⚠️ Error";
+            out2.textContent = "";
+            out3.textContent = "";
+            out4.textContent = "";
+          });
+      });
+
+      // 6) Hydrate state from localStorage
+      const savedState = localStorage.getItem("appState");
+      Object.assign(state, savedState ? JSON.parse(savedState) : {});
+
+      // 7) Persist state to localStorage
+      effect(() => localStorage.setItem("appState", JSON.stringify(state)));
+    </script>
+  </head>
+  <body>
+    <h1>“From‑Scratch” Reactivity (Remote ESM)</h1>
+
+    <section>
+      <label for="username">Username:</label>
+      <input id="username" type="text" />
+      <div class="output" id="out1">—</div>
+    </section>
+
+    <section>
+      <label for="quantity">Quantity:</label>
+      <input id="quantity" type="number" />
+      <div class="output" id="out2">—</div>
+    </section>
+
+    <section>
+      <label for="comments">Comments:</label>
+      <textarea id="comments" rows="3"></textarea>
+      <div class="output" id="out3">—</div>
+    </section>
+
+    <section>
+      <label for="tags">Tags (comma‑separated):</label>
+      <input id="tags" type="text" />
+      <div class="output" id="out4">—</div>
+    </section>
+  </body>
+</html>
