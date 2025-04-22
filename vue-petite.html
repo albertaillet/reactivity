@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Petite Vue Reactivity Demo</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module">
+      import { createApp } from "https://unpkg.com/petite-vue?module";
+      // import { createApp } from "https://esm.sh/petite-vue?exports=createApp"; // larger size than unpkg
+
+      const app = {
+        username: "alice",
+        maxRows: 3,
+        search: "t",
+        tableData: [],
+        timer: null,
+        get greeting() {
+          return `Hello ${this.username}!`;
+        },
+        persist() {
+          const persistantState = { username: this.username, maxRows: this.maxRows, search: this.search };
+          localStorage.setItem("appState", JSON.stringify(persistantState));
+        },
+        fetchData() {
+          clearTimeout(this.timer);
+          const body = JSON.stringify({ maxRows: this.maxRows, search: this.search });
+          this.timer = setTimeout(() => {
+            fetch("/api/my-endpoint", { method: "POST", headers: { "Content-Type": "application/json" }, body: body })
+              .then(res => res.json())
+              .then(data => (this.tableData = data))
+              .catch(() => (this.tableData = []));
+          }, 50);
+        },
+        init() {
+          const raw = localStorage.getItem("appState");
+          if (!raw) return;
+          const s = JSON.parse(raw);
+          if (s.username != null) this.username = s.username;
+          if (s.maxRows != null) this.maxRows = s.maxRows;
+          if (s.search != null) this.search = s.search;
+          this.fetchData();
+        }
+      };
+      createApp(app).mount();
+    </script>
+  </head>
+  <body id="app" v-scope="app" @vue:mounted="init()">
+    <h1>Petite Vue Reactivity Demo</h1>
+
+    <section>
+      <label for="username">Username:</label>
+      <input id="username" type="text" v-model="username" @input="persist()" />
+      <div class="output">{{ greeting }}</div>
+    </section>
+
+    <section>
+      <label for="maxRows">MaxRows:</label>
+      <input id="maxRows" type="number" v-model.number="maxRows" @input="persist(); fetchData()" />
+      <label for="search">Search:</label>
+      <textarea id="search" rows="3" v-model="search" @input="persist(); fetchData()"></textarea>
+      <div class="output">
+        <table v-if="tableData.length">
+          <thead>
+            <tr>
+              <th>id</th>
+              <th>title</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in tableData" :key="row.id">
+              <td>{{ row.id }}</td>
+              <td>{{ row.title }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-else>—</div>
+      </div>
+    </section>
+  </body>
+</html>
