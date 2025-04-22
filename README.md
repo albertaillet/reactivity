@@ -7,10 +7,13 @@ This is learning experience for understanding different APIs for reactivity in J
 
 The libraries used are:
 
-- [Vue 3](/vue.html)
-- [SolidJS](/solid.html)
-- [AlpineJS](/alpine.html)
-- [Standalone reactive](/reactive.html) implementation in [/reactive.js](./reactive.js)
+- [Vue 3](static/vue.html)
+  - [vue-reactivity](static/vue-reactivity.html)
+  - [petite-vue](static/vue-petite.html)
+- [SolidJS](static/solid.html)
+- [React](static/react.html)
+- [AlpineJS](static/alpine.html)
+- [Standalone reactive](static/reactive.html) implementation in [/reactive.js](static/reactive.js)
 
 ## Running the examples
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import json
+import os
+import pathlib
 import sqlite3
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
@@ -31,13 +33,10 @@ class StaticAndAPIHandler(SimpleHTTPRequestHandler):
         if search is None or not isinstance(search, str):
             self.send_error(400, "Invalid payload")
             return
-        # "Business logic"
-        con = sqlite3.connect("database.db")
         cur = con.cursor()
         query = "SELECT id, Title FROM recipes WHERE Instructions LIKE ? LIMIT ?"
         cur.execute(query, (f"%{search}%", max_rows))
         rows = cur.fetchall()
-        con.close()
         response = [{"id": row[0], "title": row[1]} for row in rows]
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
@@ -46,5 +45,8 @@ class StaticAndAPIHandler(SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    repo_path = pathlib.Path(__file__).parent
+    con = sqlite3.connect(repo_path / "database.db")
     print(f"Serving files and simple API on http://{HOST}:{PORT}/")
+    os.chdir(repo_path / "static")  # Change to the static directory
     HTTPServer((HOST, PORT), StaticAndAPIHandler).serve_forever()
