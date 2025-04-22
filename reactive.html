@@ -17,14 +17,12 @@
 
       // hydrate from localStorage on load
       (() => {
-        try {
-          const raw = localStorage.getItem("appState");
-          if (!raw) return;
-          const s = JSON.parse(raw);
-          if (s.username != null) state.username = s.username;
-          if (s.maxRows != null) state.maxRows = s.maxRows;
-          if (s.search != null) state.search = s.search;
-        } catch (_) {}
+        const raw = localStorage.getItem("appState");
+        if (!raw) return;
+        const s = JSON.parse(raw);
+        if (s.username != null) state.username = s.username;
+        if (s.maxRows != null) state.maxRows = s.maxRows;
+        if (s.search != null) state.search = s.search;
       })();
 
       // persist whenever any input‐state changes

@@ -20,15 +20,12 @@
 
         init() {
           // hydrate from localStorage
-          try {
-            const raw = localStorage.getItem("appState");
-            if (raw) {
-              const s = JSON.parse(raw);
-              if (s.username != null) this.username = s.username;
-              if (s.maxRows != null) this.maxRows = s.maxRows;
-              if (s.search != null) this.search = s.search;
-            }
-          } catch {}
+          const raw = localStorage.getItem("appState");
+          if (!raw) return;
+          const s = JSON.parse(raw);
+          if (s.username != null) this.username = s.username;
+          if (s.maxRows != null) this.maxRows = s.maxRows;
+          if (s.search != null) this.search = s.search;
 
           // persist inputs
           ["username", "maxRows", "search"].forEach(p => {

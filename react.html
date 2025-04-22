@@ -16,14 +16,12 @@
 
         // hydrate once
         useEffect(() => {
-          try {
-            const raw = localStorage.getItem("appState");
-            if (!raw) return;
-            const s = JSON.parse(raw);
-            if (s.username != null) setUsername(s.username);
-            if (s.maxRows != null) setMaxRows(s.maxRows);
-            if (s.search != null) setSearch(s.search);
-          } catch {}
+          const raw = localStorage.getItem("appState");
+          if (!raw) return;
+          const s = JSON.parse(raw);
+          if (s.username != null) setUsername(s.username);
+          if (s.maxRows != null) setMaxRows(s.maxRows);
+          if (s.search != null) setSearch(s.search);
         }, []);
 
         // persist on inputs change

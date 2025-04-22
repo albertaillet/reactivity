@@ -46,14 +46,12 @@
         setup() {
           // hydrate from localStorage on mount
           onMounted(() => {
-            try {
-              const raw = localStorage.getItem("appState");
-              if (!raw) return;
-              const s = JSON.parse(raw);
-              if (s.username != null) username.value = s.username;
-              if (s.maxRows != null) maxRows.value = s.maxRows;
-              if (s.search != null) search.value = s.search;
-            } catch (_) {}
+            const raw = localStorage.getItem("appState");
+            if (!raw) return;
+            const s = JSON.parse(raw);
+            if (s.username != null) username.value = s.username;
+            if (s.maxRows != null) maxRows.value = s.maxRows;
+            if (s.search != null) search.value = s.search;
           });
           return { username, maxRows, search, tableData, greeting };
         }
