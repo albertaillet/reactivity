@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>React Hooks and Virtual DOM Demo</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module">
+      import { createElement, useState, useEffect } from "https://esm.sh/react?exports=createElement,useState,useEffect";
+      import { createRoot } from "https://esm.sh/react-dom/client?exports=createRoot";
+
+      function App() {
+        const [username, setUsername] = useState("alice");
+        const [maxRows, setMaxRows] = useState(3);
+        const [search, setSearch] = useState("t");
+        const [tableData, setTableData] = useState([]);
+
+        // hydrate once
+        useEffect(() => {
+          try {
+            const raw = localStorage.getItem("appState");
+            if (!raw) return;
+            const s = JSON.parse(raw);
+            if (s.username != null) setUsername(s.username);
+            if (s.maxRows != null) setMaxRows(s.maxRows);
+            if (s.search != null) setSearch(s.search);
+          } catch {}
+        }, []);
+
+        // persist on inputs change
+        useEffect(() => {
+          localStorage.setItem("appState", JSON.stringify({ username, maxRows, search }));
+        }, [username, maxRows, search]);
+
+        // fetch tableData (debounced)
+        useEffect(() => {
+          const body = JSON.stringify({ maxRows, search });
+          const timer = setTimeout(() => {
+            fetch("/api/my-endpoint", { method: "POST", headers: { "Content-Type": "application/json" }, body })
+              .then(res => res.json())
+              .then(data => setTableData(data))
+              .catch(() => setTableData([]));
+          }, 50);
+          return () => clearTimeout(timer);
+        }, [maxRows, search]);
+
+        return createElement(
+          "div",
+          null,
+          createElement(
+            "section",
+            null,
+            createElement("label", { htmlFor: "username" }, "Username:"),
+            createElement("input", {
+              id: "username",
+              type: "text",
+              value: username,
+              onInput: e => setUsername(e.currentTarget.value)
+            }),
+            createElement("div", { className: "output" }, `Hello ${username}!`)
+          ),
+          createElement(
+            "section",
+            null,
+            createElement("label", { htmlFor: "maxRows" }, "MaxRows:"),
+            createElement("input", {
+              id: "maxRows",
+              type: "number",
+              value: maxRows,
+              onInput: e => setMaxRows(+e.currentTarget.value)
+            }),
+            createElement("label", { htmlFor: "search" }, "Search:"),
+            createElement("textarea", {
+              id: "search",
+              rows: 3,
+              value: search,
+              onInput: e => setSearch(e.currentTarget.value)
+            }),
+            createElement(
+              "div",
+              { className: "output" },
+              tableData.length
+                ? createElement(
+                    "table",
+                    null,
+                    createElement(
+                      "thead",
+                      null,
+                      createElement("tr", null, createElement("th", null, "id"), createElement("th", null, "title"))
+                    ),
+                    createElement(
+                      "tbody",
+                      null,
+                      ...tableData.map(row =>
+                        createElement(
+                          "tr",
+                          { key: row.id },
+                          createElement("td", null, row.id),
+                          createElement("td", null, row.title)
+                        )
+                      )
+                    )
+                  )
+                : "—"
+            )
+          )
+        );
+      }
+      createRoot(document.getElementById("app")).render(createElement(App));
+    </script>
+  </head>
+  <body>
+    <h1>React Hooks and Virtual DOM Demo</h1>
+    <div id="app"></div>
+  </body>
+</html>
