@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Vue-Reactivity Only Demo</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module">
+      import { ref, computed, watch, watchEffect } from "https://esm.sh/vue-reactivity?exports=ref,computed,watch,watchEffect";
+
+      // reactive state (it is also possible to use reactive({}) to have a reactive object, .value is not needed)
+      const username = ref("alice");
+      const maxRows = ref(3);
+      const search = ref("t");
+      const tableData = ref([]);
+
+      // computed greeting
+      const greeting = computed(() => `Hello ${username.value}!`);
+
+      // hydrate on load
+      (function hydrate() {
+        const raw = localStorage.getItem("appState");
+        if (!raw) return;
+        const s = JSON.parse(raw);
+        if (s.username != null) username.value = s.username;
+        if (s.maxRows != null) maxRows.value = s.maxRows;
+        if (s.search != null) search.value = s.search;
+      })();
+
+      // persist whenever inputs change
+      watchEffect(() => {
+        const persistentState = { username: username.value, maxRows: maxRows.value, search: search.value };
+        localStorage.setItem("appState", JSON.stringify(persistentState));
+      });
+
+      // fetch tableData on maxRows or search change, debounced
+      let timer;
+      watch(
+        [maxRows, search],
+        ([newMaxRows, newSearch]) => {
+          clearTimeout(timer);
+          const body = JSON.stringify({ maxRows: newMaxRows, search: newSearch });
+          timer = setTimeout(() => {
+            fetch("/api/my-endpoint", { method: "POST", headers: { "Content-Type": "application/json" }, body: body })
+              .then(res => res.json())
+              .then(data => (tableData.value = data))
+              .catch(() => (tableData.value = []));
+          }, 50); // debounce
+        },
+        { immediate: true }
+      );
+
+      // wire up DOM on ready
+      const inUser = document.getElementById("username");
+      const inMax = document.getElementById("maxRows");
+      const inSearch = document.getElementById("search");
+      const out1 = document.getElementById("out1");
+      const out2 = document.getElementById("out2");
+
+      // DOM → state
+      inUser.addEventListener("input", e => (username.value = e.target.value));
+      inMax.addEventListener("input", e => (maxRows.value = Number(e.target.value)));
+      inSearch.addEventListener("input", e => (search.value = e.target.value));
+
+      // state → DOM
+      watchEffect(() => (inUser.value = username.value));
+      watchEffect(() => (inMax.value = maxRows.value));
+      watchEffect(() => (inSearch.value = search.value));
+      watchEffect(() => (out1.textContent = greeting.value));
+      // prettier-ignore
+      watchEffect(() => (out2.innerHTML = "<table><thead><tr><th>id</th><th>title</th></tr></thead><tbody>" +
+          tableData.value.map((row) => `<tr><td>${row.id}</td><td>${row.title}</td></tr>`).join("") + "</tbody></table>"));
+    </script>
+  </head>
+  <body>
+    <h1>Vue-Reactivity Only Demo</h1>
+
+    <section>
+      <label for="username">Username:</label>
+      <input id="username" type="text" />
+      <div class="output" id="out1">—</div>
+    </section>
+
+    <section>
+      <label for="maxRows">MaxRows:</label>
+      <input id="maxRows" type="number" />
+      <label for="search">Search:</label>
+      <textarea id="search" rows="3"></textarea>
+      <div class="output" id="out2">—</div>
+    </section>
+  </body>
+</html>

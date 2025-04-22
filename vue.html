@@ -5,7 +5,7 @@
     <title>Vue Reactivity Demo</title>
     <link rel="stylesheet" href="style.css" />
     <script type="module">
-      import { createApp, ref, computed, watch, onMounted } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+      import { createApp, ref, computed, watch, watchEffect, onMounted } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
 
       // reactive state (it is also possible to use reactive({}) to have a reactive object, .value is not needed)
       const username = ref("alice");
@@ -17,7 +17,7 @@
       const greeting = computed(() => `Hello ${username.value}!`);
 
       // persist whenever inputs change
-      watch([username, maxRows, search], () => {
+      watchEffect(() => {
         const persistentState = { username: username.value, maxRows: maxRows.value, search: search.value };
         localStorage.setItem("appState", JSON.stringify(persistentState));
       });
@@ -26,18 +26,15 @@
       let timer;
       watch(
         [maxRows, search],
-        () => {
+        ([newMaxRows, newSearch]) => {
           clearTimeout(timer);
+          const body = JSON.stringify({ maxRows: newMaxRows, search: newSearch });
           timer = setTimeout(() => {
-            fetch("/api/my-endpoint", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ maxRows: maxRows.value, search: search.value })
-            })
+            fetch("/api/my-endpoint", { method: "POST", headers: { "Content-Type": "application/json" }, body: body })
               .then(res => res.json())
               .then(data => (tableData.value = data))
               .catch(() => (tableData.value = []));
-          }, 50); // debounce
+          }, 50);
         },
         { immediate: true }
       );
