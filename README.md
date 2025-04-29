@@ -54,6 +54,7 @@ Start the server on localhost (both serving the static HTML file and the API)
 - [lit](https://lit.dev)
 - [alpinejs](https://alpinejs.dev)
 - [reef](https://github.com/cferdinandi/reef)
+- [mini](https://github.com/xdadda/minijs) (Example of a minimalistic reactive library)
 
 ### Only-reactivity libraries
 
@@ -69,6 +70,7 @@ Start the server on localhost (both serving the static HTML file and the API)
 - [maverick-js/signals](https://github.com/maverick-js/signals)
 - [hyperactiv](https://github.com/elbywan/hyperactiv)
 - [statin](https://github.com/tomasklaen/statin)
+- [reactively](https://github.com/milomg/reactively)
 - Apparently there are a [LOT more](https://xgrommx.github.io/rx-book/content/resources/reactive_libraries/index.html)
 
 ### Reference blog post
